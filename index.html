@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plug</title>
+    <style>
+        /* --- Base & Shared Styles --- */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+        :root {
+            /* Base Colors */
+            --first-color: #1d1d1f;
+            --second-color: #0071e3;
+            --white-color: #fff;
+            --light-gray-color: #f5f5f7;
+            --text-gray-color: #6e6e73;
+            --dark-color: #000;
+            --success-color: #28a745; /* For confirmation messages */
+
+            /* Base Font */
+            --body-font: 'Roboto', sans-serif;
+
+            /* Base Font Sizes */
+            --base-font-size: 1rem;
+            --nav-link-size: 0.75rem;
+            --footer-link-size: 0.75rem;
+            --cart-item-size: 0.85rem;
+
+            /* Z-indexes */
+            --z-back: -10;
+            --z-normal: 1;
+            --z-tooltip: 10;
+            --z-fixed: 100;
+            --z-modal: 1000; /* Cart modal needs high z-index */
+
+             /* Font sizes specific to original product page design */
+            --product-biggest-font-size: 3.5rem;
+            --product-bigger-font-size: 2.25rem;
+            --product-big-font-size: 1.625rem;
+            --product-normal-font-size: 0.9rem;
+            --product-smaller-font-size: 0.75rem;
+        }
+
+        *, ::before, ::after {
+            box-sizing: border-box; margin: 0; padding: 0;
+            text-decoration: none; list-style: none;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0; font-family: var(--body-font); background-color: var(--white-color);
+            color: var(--first-color); padding-top: 3rem; /* Mobile header */
+            font-size: var(--base-font-size); line-height: 1.5;
+        }
+        img { max-width: 100%; height: auto; display: block; }
+
+        /* Page Section Container */
+        .page-section { display: none; padding-top: 0; min-height: calc(100vh - 4rem - 5rem); }
+        .page-section.active { display: block; }
+
+        /* Utility for centering content */
+        .section-container { max-width: 980px; margin: 0 auto; padding: 0 1rem; }
+
+        /* --- Shared Header --- */
+        .l-header {
+            width: 100%; position: fixed; top: 0; left: 0; z-index: var(--z-fixed);
+            background-color: rgba(255, 255, 255, 0.9); backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid #ddd;
+        }
+        .nav {
+            height: 3rem; display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 0 1rem;
+        }
+        .nav-actions { display: flex; align-items: center; gap: 1rem; }
+        .nav-item { margin-bottom: 1.5rem; } /* Mobile menu */
+        .nav-link { color: var(--first-color); font-size: var(--nav-link-size); transition: color 0.3s; padding: 0.5rem 0.3rem; white-space: nowrap; cursor: pointer; }
+        .nav-link:hover { color: var(--second-color); }
+        
+        .nav-logo { 
+            display: flex; 
+            align-items: center; 
+            margin-right: 1rem; 
+            cursor: pointer; 
+        }
+        .nav-logo-img {
+            height: 120px; /* Altura deseada para el logo */
+            width: auto;  /* Ancho automático para mantener la proporción */
+            object-fit: contain; /* Asegura que la imagen se escale bien dentro de las dimensiones */
+        }
+        .nav-toggle { display: inline; cursor: pointer; }
+        .nav-toggle img { width: 1.5rem; height: 1.5rem; }
+
+        /* Cart Icon */
+        .nav-cart-icon {
+            position: relative;
+            cursor: pointer;
+            padding: 0.5rem; 
+        }
+        .nav-cart-icon svg {
+            width: 1.1rem;
+            height: 1.1rem;
+            fill: currentColor;
+        }
+        .cart-item-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--second-color);
+            color: var(--white-color);
+            font-size: 0.65rem;
+            font-weight: bold;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 1;
+            transform: translate(30%, -30%);
+            opacity: 0; 
+            transition: opacity 0.2s;
+        }
+         .cart-item-count.visible {
+             opacity: 1;
+         }
+
+
+        /* Mobile Menu */
+        .nav-menu {
+            position: fixed; top: -150%; left: 0; background-color: var(--white-color);
+            width: 100%; height: calc(100vh - 3rem); padding: 1.5rem 1rem;
+            z-index: calc(var(--z-fixed) - 5); border-bottom: 1px solid #ddd;
+            transition: top .4s ease-in-out; text-align: left; overflow-y: auto;
+        }
+        .nav-menu.show { top: 3rem; }
+        .nav-list { display: flex; flex-direction: column; align-items: flex-start; }
+        .nav-item { margin-bottom: 0; width: 100%; border-bottom: 1px solid #eee;}
+        .nav-link { display: block; padding: 1rem; font-size: 1.1rem; width: 100%;}
+
+        /* --- Shared Footer --- */
+        .l-footer { background-color: var(--light-gray-color); padding: 2rem 1rem 1rem 1rem; margin-top: 4rem; color: var(--text-gray-color); font-size: var(--footer-link-size); }
+        .footer-content { max-width: 980px; margin: 0 auto; }
+        .footer-shop-info { font-size: var(--footer-link-size); margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #ccc; }
+        .footer-shop-info a { color: var(--second-color); } .footer-shop-info a:hover { text-decoration: underline; }
+        .footer-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #ccc; }
+        .footer-nav h4 { font-size: var(--footer-link-size); font-weight: 600; color: var(--first-color); margin-bottom: 0.8rem; }
+        .footer-nav ul li { margin-bottom: 0.5rem; } .footer-nav a { color: var(--text-gray-color); font-size: var(--footer-link-size); }
+        .footer-nav a:hover { color: var(--first-color); text-decoration: underline; }
+        .footer-bottom { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; }
+        .footer-legal-links { display: flex; gap: 0.5rem 1rem; flex-wrap: wrap; justify-content: center; }
+        .footer-legal-links a { color: var(--text-gray-color); font-size: calc(var(--footer-link-size) * 0.9); white-space: nowrap; }
+        .footer-legal-links a:hover { color: var(--first-color); text-decoration: underline; }
+        .footer-legal-links span { padding: 0 0.25rem; color: #ccc; }
+        .footer-copyright { font-size: calc(var(--footer-link-size) * 0.9); margin-top: 0.5rem; }
+
+        /* ==================== PAGE: HOME (Apple Style) ==================== */
+        #page-home .promo-section { padding: 3rem 0; text-align: center; border-bottom: 1px solid #eee; overflow: hidden; }
+        #page-home .promo-section.dark { background-color: var(--dark-color); color: var(--white-color); border-bottom-color: #333; }
+        #page-home .promo-title { font-size: 2.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+        #page-home .promo-subtitle { font-size: 1.3rem; font-weight: 400; margin-bottom: 1rem; }
+        #page-home .promo-section.dark .promo-title, #page-home .promo-section.dark .promo-subtitle { color: var(--white-color); }
+        #page-home .promo-links a { color: var(--second-color); margin: 0 0.75rem; font-size: 1.1rem; font-weight: 400; cursor: pointer; } 
+        #page-home .promo-section.dark .promo-links a { color: #2997ff; } #page-home .promo-links a:hover { text-decoration: underline; }
+        #page-home .promo-image { margin-top: 2rem; } #page-home .promo-image img { width: auto; max-width: 100%; margin: 0 auto; }
+        #page-home .promo-section .large-image img { max-width: 80%; } #page-home .promo-section .medium-image img { max-width: 60%; }
+        #page-home .promo-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; padding: 1rem 0; }
+        #page-home .promo-grid .promo-section { padding: 2rem 1rem; border-radius: 15px; border-bottom: none; background-color: var(--light-gray-color); }
+        #page-home .promo-grid .promo-section.dark { background-color: var(--dark-color); }
+        #page-home .promo-grid .promo-title { font-size: 1.8rem; } #page-home .promo-grid .promo-subtitle { font-size: 1rem; }
+        #page-home .promo-grid .promo-links a { font-size: 1rem; } #page-home .promo-grid .promo-image { margin-top: 1rem; }
+        #page-home .promo-grid .promo-image img { max-width: 80%; }
+
+        /* ==================== PRODUCT PAGE STYLES (Scoped Original) ==================== */
+        .product-page-section { font-family: 'Roboto', sans-serif; color: #1d1d1f; background-color: #fff; padding-top: 1rem; }
+        .product-page-section .bd-grid { max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0 1rem; }
+        .product-page-section .l-main { }
+
+        /* Scoped Original Home Section Styles */
+        .product-page-section .home { min-height: 80vh; display: grid; grid-template-rows: auto auto 1fr auto; grid-template-areas: "data" "buy" "img" "scroll"; row-gap: 1.5rem; padding: 2rem 0; } 
+        .product-page-section .home-data { grid-area: data; text-align: center; padding-top: 1.5rem; }
+        .product-page-section .home-title { font-size: var(--product-biggest-font-size); font-weight: 400; margin-bottom: 0.5rem; } 
+        .product-page-section .home-description { font-size: var(--product-normal-font-size); padding: 0 1rem; line-height: 1.6; margin-bottom: 1rem; } 
+        .product-page-section .buy-section { grid-area: buy; text-align: center; margin-bottom: 1.5rem; } 
+        .product-page-section .product-price { font-size: 1.2rem; font-weight: 500; margin-bottom: 0.75rem; display: block; }
+        .product-page-section .buy-button {
+            background-color: var(--second-color); color: var(--white-color); border: none;
+            padding: 0.75rem 1.5rem; border-radius: 2rem; font-size: 1rem; font-weight: 500;
+            cursor: pointer; transition: background-color 0.3s, transform 0.1s; display: inline-block;
+        }
+        .product-page-section .buy-button:hover { background-color: #0056b3; }
+        .product-page-section .buy-button:active { transform: scale(0.98); }
+        .product-page-section .buy-button.added { background-color: var(--success-color); } 
+
+        .product-page-section .home-img { grid-area: img; display: flex; justify-content: center; align-items: center; padding: 1rem 0; gap: 1rem; }
+        .product-page-section .home-img img { width: auto; height: auto; max-height: 180px; margin: 0; }
+        .product-page-section .home-scroll { grid-area: scroll; text-align: center; align-self: end; padding-bottom: 1rem; }
+        .product-page-section .home-scroll-text { display: block; font-size: var(--product-smaller-font-size); margin-bottom: 0.5rem; color: #666; }
+        .product-page-section .home-scroll-icon { width: 1.5rem; display: inline-block; vertical-align: middle; animation: product-page-bounce 2s infinite; }
+
+        @keyframes product-page-bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 60% { transform: translateY(-4px); } }
+
+        /* Scoped Original Details Section Styles */
+        .product-page-section .l-section { padding: 4rem 0; overflow: hidden; }
+        .product-page-section .details { min-height: 70vh; display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; justify-content: center; }
+        .product-page-section .details-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; width: 100%; }
+        .product-page-section .details-box { margin-bottom: 2.5rem; text-align: center; }
+        .product-page-section .details-initial { font-size: var(--product-smaller-font-size); color: #555; }
+        .product-page-section .details-title { font-size: var(--product-bigger-font-size); font-weight: 400; margin: 0.25rem 0; }
+        .product-page-section .details-title span { font-size: var(--product-big-font-size); font-weight: 300; }
+        .product-page-section .details-description { font-size: var(--product-normal-font-size); line-height: 1.5; color: #333; }
+        .product-page-section .details-img { display: flex; justify-content: center; align-items: center; }
+        .product-page-section .details-img img { width: auto; max-width: 80%; max-height: 300px; height: auto; }
+
+        /* Scoped Animations */
+        #page-airplugs .airpod1 { animation: page-airplugs-airpod1 3s infinite ease-in-out; }
+        #page-airplugs .airpod2 { animation: page-airplugs-airpod2 3s infinite ease-in-out 0.2s; }
+        @keyframes page-airplugs-airpod1 { 50% { transform: translateY(-6%); } }
+        @keyframes page-airplugs-airpod2 { 50% { transform: translateY(-6%); } }
+        #page-airplugs .airpods { animation: page-airplugs-airpods 3s infinite ease-in-out; }
+        @keyframes page-airplugs-airpods { 50% { transform: translateY(-4%); } }
+
+        /* --- Placeholder Page Styles --- */
+        .placeholder-page-content { padding: 5rem 1rem; text-align: center; }
+        .placeholder-page-content h1 { font-size: 2rem; margin-bottom: 1rem; }
+        .placeholder-page-content p { margin-bottom: 2rem; color: var(--text-gray-color); }
+        .placeholder-page-content img { max-width: 500px; margin: 0 auto; border-radius: 15px; }
+
+        /* --- Shopping Cart Modal/Sidebar --- */
+        .cart-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: var(--z-modal) - 1;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.3s linear;
+        }
+        .cart-overlay.visible { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+        .cart-sidebar {
+            position: fixed; top: 0; right: -100%; width: 90%; max-width: 400px; height: 100%;
+            background-color: var(--white-color); z-index: var(--z-modal);
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+            transition: right 0.4s ease-in-out;
+        }
+        .cart-sidebar.visible { right: 0; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #eee; }
+        .cart-header h2 { font-size: 1.2rem; font-weight: 600; }
+        .cart-close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-gray-color); }
+        .cart-body { flex-grow: 1; overflow-y: auto; padding: 1rem 1.5rem; }
+        .cart-items-list { margin-bottom: 1rem; }
+        .cart-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; font-size: var(--cart-item-size); }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-img img { width: 50px; height: 50px; object-fit: contain; }
+        .cart-item-details { flex-grow: 1; }
+        .cart-item-name { font-weight: 500; display: block; margin-bottom: 0.2rem; }
+        .cart-item-price { color: var(--text-gray-color); }
+        .cart-empty-msg { text-align: center; color: var(--text-gray-color); padding: 2rem 0; }
+        .cart-footer { padding: 1rem 1.5rem; border-top: 1px solid #eee; background-color: var(--light-gray-color); }
+        .cart-total { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+        .cart-clear-btn { display: block; width: 100%; text-align: center; background-color: #dc3545; color: var(--white-color); border: none; padding: 0.75rem; border-radius: 5px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.3s; }
+        .cart-clear-btn:hover { background-color: #c82333; }
+
+        /* --- FAQ Section Styles --- */
+        .faq-section {
+            margin-top: 3rem;
+            text-align: left;
+        }
+        .faq-section h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--first-color);
+        }
+        .faq-item {
+            background-color: var(--light-gray-color);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .faq-question {
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--first-color);
+            transition: background-color 0.2s;
+        }
+        .faq-question:hover {
+            background-color: #e9e9ed;
+        }
+        .faq-question::after {
+            content: '+';
+            font-size: 1.5rem;
+            font-weight: 300;
+            transition: transform 0.3s ease-out;
+        }
+        .faq-item.active .faq-question::after {
+            transform: rotate(45deg);
+        }
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            color: var(--text-gray-color);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .faq-item.active .faq-answer {
+            padding-bottom: 1.5rem; 
+        }
+
+
+        /* --- Media Queries --- */
+        @media screen and (min-width: 768px) {
+            body { padding-top: 4rem; } .nav { height: 4rem; }
+            .nav-menu { position: static; top: auto; width: auto; height: auto; padding: 0; border: none; background-color: transparent; backdrop-filter: none; transition: none; margin-left: auto; text-align: left; display: flex; align-items: center; overflow-y: visible; }
+            .nav-list { flex-direction: row; } .nav-item { margin: 0 0.5rem; width: auto; border-bottom: none; }
+            .nav-item:last-child { margin-right: 0; } .nav-link { padding: 0.5rem; font-size: var(--nav-link-size); width: auto; }
+            .nav-toggle { display: none; }
+            .footer-bottom { flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
+            .footer-copyright { margin-top: 0; } .footer-legal-links { justify-content: flex-end; }
+
+            #page-home .promo-section { padding: 4rem 0; } #page-home .promo-title { font-size: 3.5rem; }
+            #page-home .promo-subtitle { font-size: 1.8rem; } #page-home .promo-links a { font-size: 1.2rem; }
+            #page-home .promo-grid { grid-template-columns: 1fr 1fr; padding: 2rem 0; gap: 1.5rem; }
+            #page-home .promo-grid .promo-section { padding: 3rem 1.5rem; } #page-home .promo-grid .promo-title { font-size: 2.2rem; }
+            #page-home .promo-grid .promo-subtitle { font-size: 1.1rem; }
+
+            .product-page-section .home { height: calc(100vh - 4rem); grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto; grid-template-areas: "data img" "buy img" "scroll scroll"; align-content: center; column-gap: 4rem; padding: 0 1rem; }
+            .product-page-section .home-data { padding: 0; align-self: end; text-align: left; }
+            .product-page-section .buy-section { padding: 0; align-self: start; text-align: left; margin-bottom: 0; }
+            .product-page-section .home-img { align-self: center; padding: 0; grid-row: 1 / 3; }
+            #page-airplugs .home-img img { width: 114px; height: 248px; } #page-iphone .home-img img { max-height: 450px; width: auto; } #page-mac .home-img img { max-height: 350px; width: auto; }
+            .product-page-section .home-description { padding: 0 5rem 0 0; text-align: left; }
+            .product-page-section .home-scroll { padding-bottom: 2rem; align-self: end; grid-column: 1 / -1; }
+            .product-page-section .details { grid-template-columns: 1fr 1fr; column-gap: 4rem; padding: 6rem 1rem; }
+            .product-page-section .details-content { grid-template-columns: repeat(3, 1fr); gap: 2.5rem; order: 1; }
+            .product-page-section .details-box { margin-bottom: 0; }
+            .product-page-section .details-img { align-self: center; order: 2; }
+            #page-airplugs .details-img img { width: 300px; } #page-iphone .details-img img { max-height: 500px; width: auto; } #page-mac .details-img img { max-height: 400px; width: auto; }
+        }
+        @media screen and (min-width: 1200px) {
+             .section-container { max-width: 1080px; } .footer-content { max-width: 1080px; }
+        }
+
+    </style>
+</head>
+<body>
+    <header class="l-header" id="header">
+        <nav class="nav">
+            <a href="#home" class="nav-logo page-link">
+                <img src="https://i.ibb.co/3HVrk8W/Dise-o-sin-t-tulo-3.png" 
+                     alt="[Logo de Plug]" 
+                     class="nav-logo-img" 
+                   
+            </a>
+            <div class="nav-menu" id="nav-menu">
+                <ul class="nav-list">
+                    
+                    <li class="nav-item"><a href="#mac" class="nav-link page-link">pMac</a></li>
+                    <li class="nav-item"><a href="#ipad" class="nav-link page-link">PlugPad</a></li>
+                    <li class="nav-item"><a href="#iphone" class="nav-link page-link">PlugPhone</a></li>
+                    <li class="nav-item"><a href="#watch" class="nav-link page-link">PlugWatch</a></li>
+                    <li class="nav-item"><a href="#airplugs" class="nav-link page-link">AirPlugs</a></li>
+                    <li class="nav-item"><a href="#support" class="nav-link page-link">Soporte</a></li>
+                </ul>
+            </div>
+            <div class="nav-actions">
+                 <div class="nav-cart-icon" id="cart-icon">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M1 1.5A1.5 1.5 0 0 1 2.5 0h1.71a.75.75 0 0 1 .72.53l.4 1.2a.75.75 0 0 1-.18.75l-.66.88a.75.75 0 0 1-1.06 0l-.88-.66a.75.75 0 0 1-.18-.75L3 1.5H2.5zM6 1.5l.4 1.2a.75.75 0 0 1-.18.75l-.66.88a.75.75 0 1 1-1.06-1.06l.88-.66a.75.75 0 0 1 .72-.53H6z"/><path fill-rule="evenodd" d="M7.5 4.5a.5.5 0 0 1 .5.5v1.5H9a.5.5 0 0 1 0 1H8v1.5a.5.5 0 0 1-1 0V7H5.5a.5.5 0 0 1 0-1H7V5a.5.5 0 0 1 .5-.5z"/><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h17A1.5 1.5 0 0 1 20 3.5v11A1.5 1.5 0 0 1 18.5 16h-17A1.5 1.5 0 0 1 0 14.5v-11zm1.5.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h17a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-17z"/></svg>
+                     <span class="cart-item-count" id="cart-item-count">0</span>
+                 </div>
+                <div class="nav-toggle" id="nav-toggle">
+                    <img src="https://i.postimg.cc/zGFxhLRv/bx-chevron-down.png" alt="Menú">
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+
+        <section id="page-home" class="page-section active">
+            <section class="promo-section dark"><div class="section-container"><h2 class="promo-title">PlugPhone 16 Pro</h2><h3 class="promo-subtitle">Titanio. Tan robusto. Tan ligero. Tan Pro.</h3><div class="promo-links"><a href="#" class="page-link" data-targetpage="iphone">Más información &gt;</a><a href="#">Comprar &gt;</a></div><div class="promo-image large-image"><img src="https://ssr.col.movistar.es/api/v3/get-pic/content/dam/movistar/estaticos/imagenes/dispositivos/apple/iphone/iphone-16-pro-max-titanio-negro-01.png?oe=png" alt="[Imagen de PlugPhone 16 Pro]"></div></div></section>
+            <section class="promo-section"><div class="section-container"><h2 class="promo-title">PlugBook Air 15"</h2><h3 class="promo-subtitle">Impresionantemente grande. Increíblemente fino.</h3><div class="promo-links"><a href="#" class="page-link" data-targetpage="mac">Más información &gt;</a><a href="#">Comprar &gt;</a></div><div class="promo-image medium-image"><img src="https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/mba_15_m3_2024_hero.png" alt="[Imagen de PlugBook Air 15 pulgadas]"></div></div></section>
+            <section class="promo-grid-container section-container"><div class="promo-grid"> <div class="promo-section" id="watch-promo"><h3 class="promo-title">PlugWatch X</h3><p class="promo-subtitle">Más inteligente. Más brillante.</p><div class="promo-links"><a href="#" class="page-link" data-targetpage="watch">Más info &gt;</a><a href="#">Comprar &gt;</a></div><div class="promo-image"><img src="https://i0.wp.com/unaaldia.hispasec.com/wp-content/uploads/2015/05/c78fb-apple-watch_2x.png?ssl=1" alt="[Imagen de PlugWatch X]"></div></div> <div class="promo-section dark" id="ipad-promo"><h3 class="promo-title">PlugPad Pro</h3><p class="promo-subtitle">Con la potencia del chip M4.</p><div class="promo-links"><a href="#" class="page-link" data-targetpage="ipad">Más info &gt;</a><a href="#">Comprar &gt;</a></div><div class="promo-image"><img src="https://tienda.bananacomputer.com/cms/uploads/webp/iPad_Pro_M2_12_Wifi_Plata_11-750-sankem.webp" alt="[Imagen de PlugPad Pro]"></div></div> <div class="promo-section" id="airplugs-promo"><h3 class="promo-title">AirPlugs Pro</h3><p class="promo-subtitle">Audio adaptativo. Ahora en silencio.</p><div class="promo-links"><a href="#" class="page-link" data-targetpage="airplugs">Más info &gt;</a><a href="#">Comprar &gt;</a></div><div class="promo-image"><img src="https://geeky.sfo2.cdn.digitaloceanspaces.com/geekydrop_production/thumbnail--Kp3DFV9txK.webp" alt="[Imagen de AirPlugs Pro]"></div></div> <div class="promo-section dark" id="tradein-promo"><h3 class="promo-title">Plug Trade In</h3><p class="promo-subtitle">Cambia tu dispositivo por crédito.</p><div class="promo-links"><a href="#">Ver valor &gt;</a></div><div class="promo-image"><img src="https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/apple-gift-card-tradein-202303_FMT_WHH?wid=750&hei=724&fmt=png-alpha&.v=LzFhZi9oQmx1cmpKbVRzT0NkU0E1V3FHUWthdzVJelVoMmR4RCtNdDY3MnBqKy93aE4rODMxK0VmcjZ1WGg3b2kvYUxxWWdQZmJVcVdrOFljNGluaTB3OFlFUzg3RlM3dHVKaS9Qd29laEp0aHo5K1BWR3VWN0cwb2Vtb2I5VHM" alt="[Imagen de Trade In]"></div></div></div></section>
+        </section>
+
+        <section id="page-airplugs" class="page-section product-page-section">
+            <div class="airplugs-content-wrapper">
+                <main class="l-main bd-grid" id="airplugs-l-main">
+                    <section class="home">
+                        <div class="home-data">
+                            <h1 class="home-title">AirPlugs</h1>
+                            <p class="home-description">AirPlugs give you an unrivaled wireless experience, now offering more hours of talk time and a new <br> wireless charging case</p>
+                        </div>
+                         <div class="buy-section">
+                             <span class="product-price">199 €</span>
+                             <button class="buy-button" data-product-id="airplugs-gen3" data-product-name="AirPlugs (3ª gen)" data-product-price="199" data-product-image="https://i.postimg.cc/ht0bZHst/airpods.png">Comprar</button>
+                         </div>
+                        <div class="home-img">
+                            <img src="https://i.postimg.cc/TwLjthhr/airpod1.png" alt="[Imagen de Airplug izquierdo]" class="airpod1" onerror="this.onerror=null; this.src='https://placehold.co/81x177/e2e8f0/9ca3af?text=L';">
+                            <img src="https://i.postimg.cc/d1b2pvTg/airpod2.png" alt="[Imagen de Airplug derecho]" class="airpod2" onerror="this.onerror=null; this.src='https://placehold.co/81x177/e2e8f0/9ca3af?text=R';">
+                        </div>
+                        <div class="home-scroll">
+                            <span class="home-scroll-text">Scroll down for more</span>
+                            <a href="#airplugs-l-section"><img src="https://i.postimg.cc/brPG1vnY/bx-mouse.png" alt="[Icono de ratón]" class="home-scroll-icon"></a>
+                        </div>
+                    </section>
+                    <section class="l-section" id="airplugs-l-section">
+                        <div class="details">
+                            <div class="details-content">
+                                <div class="details-box"><span class="details-initial">More than</span><h3 class="details-title">24 <span>h</span></h3><p class="details-description">battery with<br> the charging case</p></div>
+                                <div class="details-box"><span class="details-initial">Until</span><h3 class="details-title">5 <span>h</span></h3><p class="details-description">battery with<br> a single charge</p></div>
+                                <div class="details-box"><span class="details-initial">Only</span><h3 class="details-title">15 <span>min</span></h3><p class="details-description">charging is equivalent <br>to up to 3 hours of <br>audio</p></div>
+                            </div>
+                            <div class="details-img"><img src="https://i.postimg.cc/ht0bZHst/airpods.png" alt="[Imagen de Airplugs con estuche]" class="airpods" onerror="this.onerror=null; this.src='https://placehold.co/218x200/e2e8f0/9ca3af?text=Case';"></div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </section>
+
+        <section id="page-iphone" class="page-section product-page-section">
+             <main class="l-main bd-grid">
+                 <section class="home">
+                     <div class="home-data">
+                         <h1 class="home-title">PlugPhone 16</h1>
+                         <p class="home-description">El nuevo PlugPhone con un diseño revolucionario y cámara Pro avanzada.</p>
+                     </div>
+                      <div class="buy-section">
+                          <span class="product-price">999 €</span>
+                          <button class="buy-button" data-product-id="iphone-16" data-product-name="PlugPhone 16" data-product-price="999" data-product-image="https://placehold.co/100x100/f5f5f7/1d1d1f?text=P16">Comprar</button>
+                      </div>
+                     <div class="home-img">
+                         <img src="https://assets.swappie.com/cdn-cgi/image/width=600,height=600,fit=contain,format=auto/swappie-iphone-16-pro-max-desert-titanium-back.png?v=9f7ae122" alt="[Imagen frontal de PlugPhone 16]">
+                         <img src="https://entel.cdn.modyo.com/uploads/d8fefab6-a9f5-4ef6-8d09-43230b5cb35e/original/apple-iphone-16-pro-gray-2.png" alt="[Imagen trasera de PlugPhone 16]">
+                     </div>
+                     <div class="home-scroll">
+                         <span class="home-scroll-text">Desliza para detalles</span>
+                         <a href="#iphone-l-section"><img src="https://i.postimg.cc/brPG1vnY/bx-mouse.png" alt="[Icono de ratón]" class="home-scroll-icon"></a>
+                     </div>
+                 </section>
+                 <section class="l-section" id="iphone-l-section">
+                     <div class="details">
+                         <div class="details-content">
+                             <div class="details-box"><span class="details-initial">Chip</span><h3 class="details-title">A18 <span>Pro</span></h3><p class="details-description">Rendimiento<br> sin precedentes.</p></div>
+                             <div class="details-box"><span class="details-initial">Pantalla</span><h3 class="details-title">6.7<span>"</span></h3><p class="details-description">Super Retina XDR<br>con ProMotion.</p></div>
+                             <div class="details-box"><span class="details-initial">Cámara</span><h3 class="details-title">48<span>MP</span></h3><p class="details-description">Sistema Pro<br>con Teleobjetivo 5x.</p></div>
+                         </div>
+                         <div class="details-img">
+                              <img src="https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/121031-iphone-16-pro.png" alt="[Imagen detalle de PlugPhone 16]">
+                         </div>
+                     </div>
+                 </section>
+             </main>
+        </section>
+
+        <section id="page-mac" class="page-section product-page-section">
+            <main class="l-main bd-grid">
+                 <section class="home">
+                     <div class="home-data">
+                         <h1 class="home-title">PlugBook Pro</h1>
+                         <p class="home-description">Potencia Pro donde quiera que vayas. Con el nuevo chip M4.</p>
+                     </div>
+                      <div class="buy-section">
+                          <span class="product-price">1599 €</span>
+                          <button class="buy-button" data-product-id="macbook-pro-m4" data-product-name="PlugBook Pro M4" data-product-price="1599" data-product-image="https://placehold.co/100x100/f5f5f7/1d1d1f?text=MBP">Comprar</button>
+                      </div>
+                     <div class="home-img">
+                          <img src="https://m.media-amazon.com/images/I/71zB3hTvdSL._AC_UF1000,1000_QL80_.jpg" alt="[Imagen de PlugBook Pro abierto]">
+                     </div>
+                     <div class="home-scroll">
+                         <span class="home-scroll-text">Desliza para detalles</span>
+                         <a href="#mac-l-section"><img src="https://i.postimg.cc/brPG1vnY/bx-mouse.png" alt="[Icono de ratón]" class="home-scroll-icon"></a>
+                     </div>
+                 </section>
+                 <section class="l-section" id="mac-l-section">
+                     <div class="details">
+                         <div class="details-content">
+                             <div class="details-box"><span class="details-initial">Chip</span><h3 class="details-title">M4 <span>Max</span></h3><p class="details-description">CPU 14 núcleos<br>GPU 30 núcleos.</p></div>
+                             <div class="details-box"><span class="details-initial">Batería</span><h3 class="details-title">22 <span>h</span></h3><p class="details-description">La mayor autonomía<br>en un Mac.</p></div>
+                             <div class="details-box"><span class="details-initial">Memoria</span><h3 class="details-title">128<span>GB</span></h3><p class="details-description">Memoria unificada<br>ultrarrápida.</p></div>
+                         </div>
+                         <div class="details-img">
+                              <img src="https://macniacos.es/img/p/3/3/7/6/3376.jpg" alt="[Imagen lateral de PlugBook Pro]">
+                         </div>
+                     </div>
+                 </section>
+            </main>
+        </section>
+
+         <section id="page-ipad" class="page-section product-page-section">
+             <main class="l-main bd-grid">
+                 <section class="home">
+                     <div class="home-data">
+                         <h1 class="home-title">PlugPad Air</h1>
+                         <p class="home-description">Potente. Colorido. Maravilloso. Ahora en dos tamaños.</p>
+                     </div>
+                      <div class="buy-section">
+                          <span class="product-price">699 €</span>
+                          <button class="buy-button" data-product-id="ipad-air-m2" data-product-name="PlugPad Air M2" data-product-price="699" data-product-image="https://placehold.co/100x100/f5f5f7/1d1d1f?text=IPA">Comprar</button>
+                      </div>
+                     <div class="home-img">
+                          <img src="https://cdn.alloallo.media/catalog/product/apple/ipad/ipad-pro-11-in-3rd-generation/ipad-pro-11-in-3rd-generation-silver.jpg" alt="[Imagen de PlugPad Air 11]">
+                         <img src="https://rossellimac.es/cdn/shop/files/iPad_Air_13_M2_WiFi_Blue_PDP_Image_Position_1b__ESES.jpg?v=1716473665&width=1445" alt="[Imagen de PlugPad Air 13]">
+                     </div>
+                     <div class="home-scroll">
+                         <span class="home-scroll-text">Desliza para detalles</span>
+                         <a href="#ipad-l-section"><img src="https://i.postimg.cc/brPG1vnY/bx-mouse.png" alt="[Icono de ratón]" class="home-scroll-icon"></a>
+                     </div>
+                 </section>
+                 <section class="l-section" id="ipad-l-section">
+                     <div class="details">
+                         <div class="details-content">
+                             <div class="details-box"><span class="details-initial">Chip</span><h3 class="details-title">M2</h3><p class="details-description">Rendimiento<br>increíble.</p></div>
+                             <div class="details-box"><span class="details-initial">Pantalla</span><h3 class="details-title">Liquid<span>Retina</span></h3><p class="details-description">Colores vibrantes<br>y True Tone.</p></div>
+                             <div class="details-box"><span class="details-initial">Cámara</span><h3 class="details-title">12<span>MP</span></h3><p class="details-description">Frontal ultra gran angular<br>con Encuadre Centrado.</p></div>
+                         </div>
+                         <div class="details-img">
+                               <img src="https://media.k-tuin.com/images/blog/2024/mayo/colores-ipad-air-vs-ipad-pro.webp" alt="[Imagen de PlugPad Air colores]">
+                         </div>
+                     </div>
+                 </section>
+             </main>
+        </section>
+
+         <section id="page-watch" class="page-section product-page-section">
+             <main class="l-main bd-grid">
+                 <section class="home">
+                     <div class="home-data">
+                         <h1 class="home-title">PlugWatch X</h1>
+                         <p class="home-description">Tu compañero esencial para una vida saludable.</p>
+                     </div>
+                      <div class="buy-section">
+                          <span class="product-price">449 €</span>
+                          <button class="buy-button" data-product-id="watch-x" data-product-name="PlugWatch X" data-product-price="449" data-product-image="https://placehold.co/100x100/f5f5f7/1d1d1f?text=PWX">Comprar</button>
+                      </div>
+                     <div class="home-img">
+                         <img src="https://rossellimac.es/cdn/shop/files/Apple_Watch_Series_10_42mm_GPS_Rose_Gold_Aluminum_Sport_Band_Light_Blush_PDP_Image_Position_1__ESES_9eecc15e-0f86-4a41-9aa3-d1fea0d0f475.jpg?v=1727258822&width=823" alt="[Imagen de PlugWatch X 1]">
+                         <img src="https://www.yaphone.com/6537-thickbox_default/apple-watch-ultra-2.jpg" alt="[Imagen de PlugWatch X 2]">
+                     </div>
+                     <div class="home-scroll">
+                         <span class="home-scroll-text">Desliza para detalles</span>
+                         <a href="#watch-l-section"><img src="https://i.postimg.cc/brPG1vnY/bx-mouse.png" alt="[Icono de ratón]" class="home-scroll-icon"></a>
+                     </div>
+                 </section>
+                 <section class="l-section" id="watch-l-section">
+                     <div class="details">
+                         <div class="details-content">
+                             <div class="details-box"><span class="details-initial">Salud</span><h3 class="details-title">ECG<span>app</span></h3><p class="details-description">Monitoriza tu<br>ritmo cardiaco.</p></div>
+                             <div class="details-box"><span class="details-initial">Seguridad</span><h3 class="details-title">SOS<span>Emergencia</span></h3><p class="details-description">Detección de caídas<br>y accidentes.</p></div>
+                             <div class="details-box"><span class="details-initial">Deporte</span><h3 class="details-title">+100<span>modos</span></h3><p class="details-description">Registra todos<br>tus entrenos.</p></div>
+                         </div>
+                         <div class="details-img">
+                              <img src="https://cdn.grupoelcorteingles.es/statics/manager/contents/images/apple23/watchultra/hero_ultra_small.png?1694046730703" alt="[Imagen de esferas PlugWatch X]">
+                         </div>
+                     </div>
+                 </section>
+             </main>
+        </section>
+
+         <section id="page-store" class="page-section">
+             <div class="placeholder-page-content section-container">
+                 <h1>Store</h1>
+                 <p>Explora todos nuestros productos y accesorios.</p>
+                  <img src="https://placehold.co/800x400/f5f5f7/1d1d1f?text=Store+Placeholder" alt="[Placeholder de Store]">
+            </div>
+        </section>
+
+         <section id="page-support" class="page-section">
+             <div class="placeholder-page-content section-container">
+                 <h1>Soporte</h1>
+                 <p>Encuentra ayuda para tus productos Plug.</p>
+                  <img src="https://support.apple.com/content/dam/edam/applecare/images/en_US/psp_content/tile-split-getsupport.image.large_2x.png" alt="[Placeholder de Soporte]">
+            
+                 <div class="faq-section">
+                    <h2>Preguntas Frecuentes</h2>
+                    <div class="faq-item">
+                        <div class="faq-question">¿Cómo puedo realizar un seguimiento de mi pedido?</div>
+                        <div class="faq-answer">
+                            <p>Una vez que tu pedido haya sido enviado, recibirás un correo electrónico de confirmación con un número de seguimiento. Puedes usar este número en el sitio web del transportista para ver el estado actual de tu envío.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">¿Cuál es la política de devoluciones?</div>
+                        <div class="faq-answer">
+                            <p>Ofrecemos una política de devolución de 30 días para la mayoría de los productos. Los artículos deben estar en su estado original y con el embalaje intacto. Consulta nuestra página de <a href="#">Política de Devoluciones</a> para más detalles.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">¿Mi producto Plug tiene garantía?</div>
+                        <div class="faq-answer">
+                            <p>Sí, todos los productos Plug nuevos vienen con una garantía limitada de un año. Puedes encontrar más información sobre la cobertura de la garantía en la sección de <a href="#">Información de Garantía</a> en nuestro sitio web.</p>
+                        </div>
+                    </div>
+                     <div class="faq-item">
+                        <div class="faq-question">¿Cómo contacto con el servicio de atención al cliente?</div>
+                        <div class="faq-answer">
+                            <p>Puedes contactar con nuestro equipo de atención al cliente a través de nuestro <a href="#">formulario de contacto online</a>, por teléfono al 900 123 456, o visitando una de nuestras <a href="#">tiendas Plug</a>.</p>
+                        </div>
+                    </div>
+                 </div>
+                 </div>
+        </section>
+
+    </main>
+
+    <footer class="l-footer">
+        <div class="footer-content"><div class="footer-shop-info"><p>Distribuidores oficiales de apple. Más formas de comprar: <a href="#">Encuentra una tienda Plug</a> o <a href="#">llama al 900 123 456</a>.</p></div><nav class="footer-nav"><div><h4>Explorar Plug</h4><ul><li><a href="#">MacPlug</a></li><li><a href="#">PlugPad</a></li><li><a href="#">PlugPhone</a></li><li><a href="#">PlugWatch</a></li><li><a href="#">AirPlugs</a></li><li><a href="#">TV y Casa</a></li></ul></div><div><h4>Cuenta</h4><ul><li><a href="#">Gestionar ID de Plug</a></li><li><a href="#">Cuenta de la Store</a></li><li><a href="#">iCloud.com</a></li></ul></div><div><h4>Para Empresas</h4><ul><li><a href="#">Plug y Empresas</a></li><li><a href="#">Comprar para Empresas</a></li></ul></div><div><h4>Valores de Plug</h4><ul><li><a href="#">Medio Ambiente</a></li><li><a href="#">Privacidad</a></li><li><a href="#">Accesibilidad</a></li></ul></div><div><h4>Acerca de Plug</h4><ul><li><a href="#">Newsroom</a></li><li><a href="#">Empleo</a></li><li><a href="#">Inversores</a></li><li><a href="#">Contacto</a></li></ul></div></nav><div class="footer-bottom"><p class="footer-copyright">Distribuidores oficiales de apple.</p><div class="footer-legal-links"><a href="#">Política de Privacidad</a><span>|</span><a href="#">Uso de Cookies</a><span>|</span><a href="#">Condiciones de Uso</a><span>|</span><a href="#">Ventas y Reembolsos</a><span>|</span><a href="#">Avisos Legales</a><span>|</span><a href="#">Mapa del Sitio</a></div></div></div>
+    </footer>
+
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2>Tu Cesta</h2>
+            <button class="cart-close-btn" id="cart-close-btn">&times;</button>
+        </div>
+        <div class="cart-body">
+            <div class="cart-items-list" id="cart-items-list"></div>
+             <p class="cart-empty-msg" id="cart-empty-msg">Tu cesta está vacía.</p>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total" id="cart-total">
+                <span>Total:</span>
+                <span>€0.00</span>
+            </div>
+            <button class="cart-clear-btn" id="cart-clear-btn">Vaciar Cesta</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.8/ScrollMagic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.8/plugins/animation.gsap.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navToggle = document.getElementById('nav-toggle');
+            const navMenu = document.getElementById('nav-menu');
+            const pageLinks = document.querySelectorAll('.page-link');
+            const pageSections = document.querySelectorAll('.page-section');
+            const cartIcon = document.getElementById('cart-icon');
+            const cartSidebar = document.getElementById('cart-sidebar');
+            const cartOverlay = document.getElementById('cart-overlay');
+            const cartCloseBtn = document.getElementById('cart-close-btn');
+            const cartItemsList = document.getElementById('cart-items-list');
+            const cartTotalElement = document.getElementById('cart-total').querySelector('span:last-child');
+            const cartClearBtn = document.getElementById('cart-clear-btn');
+            const cartItemCountElement = document.getElementById('cart-item-count');
+            const cartEmptyMsg = document.getElementById('cart-empty-msg');
+
+            let pageScrollMagic = { controller: null, scenes: [] };
+            let cartItems = [];
+
+            function loadCart() {
+                const storedCart = localStorage.getItem('plugStoreCart');
+                if (storedCart) {
+                    cartItems = JSON.parse(storedCart);
+                }
+                updateCartUI();
+            }
+
+            function saveCart() {
+                localStorage.setItem('plugStoreCart', JSON.stringify(cartItems));
+            }
+
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', () => navMenu.classList.toggle('show'));
+            }
+
+            function toggleCartSidebar() {
+                 cartSidebar.classList.toggle('visible');
+                 cartOverlay.classList.toggle('visible');
+            }
+            if (cartIcon) cartIcon.addEventListener('click', toggleCartSidebar);
+            if (cartCloseBtn) cartCloseBtn.addEventListener('click', toggleCartSidebar);
+            if (cartOverlay) cartOverlay.addEventListener('click', toggleCartSidebar);
+
+            function destroyScrollMagic() {
+                if (pageScrollMagic.controller) {
+                    pageScrollMagic.controller.destroy(true);
+                    pageScrollMagic.controller = null;
+                    pageScrollMagic.scenes = [];
+                    pageScrollMagic.currentPage = null;
+                }
+            }
+
+             function killPageGSAPAnimations(pageId) {
+                 const pageElement = document.getElementById(pageId);
+                 if (!pageElement) return;
+                 gsap.killTweensOf(pageElement.querySelectorAll('.home-title, .home-description, .buy-section, .home-img img, .home-scroll, .details-img, .details-box, .promo-title, .promo-subtitle, .promo-links a, .promo-image, .promo-grid .promo-section'));
+             }
+
+            function showPage(targetPageId) {
+                let pageFound = false;
+                const activePage = document.querySelector('.page-section.active');
+
+                pageSections.forEach(section => {
+                    if (section.id === targetPageId) {
+                        if (!section.classList.contains('active')) {
+                            if (activePage) {
+                                destroyScrollMagic();
+                                killPageGSAPAnimations(activePage.id);
+                            }
+                            section.classList.add('active');
+                            window.scrollTo(0, 0);
+                            initPageAnimations(targetPageId);
+                        }
+                        pageFound = true;
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                if (!pageFound) {
+                    console.warn(`Target page "${targetPageId}" not found. Showing home.`);
+                     if (activePage) {
+                         destroyScrollMagic();
+                         killPageGSAPAnimations(activePage.id);
+                     }
+                    document.getElementById('page-home').classList.add('active');
+                    initPageAnimations('page-home');
+                }
+
+                if (navMenu && navMenu.classList.contains('show')) {
+                    navMenu.classList.remove('show');
+                }
+            }
+
+            pageLinks.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    let targetPageId = link.getAttribute('href');
+                    if (!targetPageId || targetPageId === '#') {
+                         targetPageId = link.dataset.targetpage;
+                         if(targetPageId) targetPageId = '#'+targetPageId;
+                    }
+                    if (targetPageId && targetPageId.startsWith('#')) {
+                        const pageId = 'page-' + targetPageId.substring(1);
+                        showPage(pageId);
+                    }
+                });
+            });
+
+            function formatPrice(price) {
+                 return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+            }
+
+            function addToCart(product) {
+                cartItems.push(product);
+                updateCartUI();
+                saveCart();
+                if (!cartSidebar.classList.contains('visible')) {
+                    toggleCartSidebar();
+                }
+            }
+
+            function updateCartUI() {
+                cartItemsList.innerHTML = '';
+                let total = 0;
+                if (cartItems.length === 0) {
+                    cartEmptyMsg.style.display = 'block';
+                } else {
+                     cartEmptyMsg.style.display = 'none';
+                     cartItems.forEach(item => {
+                        total += parseFloat(item.price);
+                        const cartItemElement = document.createElement('div');
+                        cartItemElement.classList.add('cart-item');
+                        const imageSrc = item.image || 'https://placehold.co/50x50/f5f5f7/1d1d1f?text=Plug';
+                        cartItemElement.innerHTML = `
+                            <div class="cart-item-img"><img src="${imageSrc}" alt="${item.name}" onerror="this.onerror=null; this.src='https://placehold.co/50x50/f5f5f7/1d1d1f?text=Img';"></div>
+                            <div class="cart-item-details">
+                                <span class="cart-item-name">${item.name}</span>
+                                <span class="cart-item-price">${formatPrice(item.price)}</span>
+                            </div>`;
+                        cartItemsList.appendChild(cartItemElement);
+                    });
+                }
+                cartTotalElement.textContent = formatPrice(total);
+                cartItemCountElement.textContent = cartItems.length;
+                cartItemCountElement.classList.toggle('visible', cartItems.length > 0);
+            }
+
+            function clearCart() {
+                cartItems = [];
+                updateCartUI();
+                saveCart();
+            }
+
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('buy-button')) {
+                    const button = event.target;
+                    const product = {
+                        id: button.dataset.productId, name: button.dataset.productName,
+                        price: button.dataset.productPrice, image: button.dataset.productImage
+                    };
+                    addToCart(product);
+                    button.textContent = 'Añadido!'; button.classList.add('added');
+                    setTimeout(() => { button.textContent = 'Comprar'; button.classList.remove('added'); }, 1500);
+                }
+            });
+
+            if (cartClearBtn) cartClearBtn.addEventListener('click', clearCart);
+
+            function initPageAnimations(pageId) {
+                 if (typeof ScrollMagic === 'undefined' || typeof gsap === 'undefined' || !ScrollMagic.Scene.prototype.setTween) { return; }
+                 destroyScrollMagic();
+                 pageScrollMagic.controller = new ScrollMagic.Controller();
+                 pageScrollMagic.currentPage = pageId;
+                 pageScrollMagic.scenes = [];
+
+                if (pageId === 'page-home') {
+                    initHomePageAnimations(pageScrollMagic.controller);
+                } else if (document.getElementById(pageId)?.classList.contains('product-page-section')) {
+                    initProductPageAnimations(pageId, pageScrollMagic.controller);
+                }
+            }
+
+            function initHomePageAnimations(controller) {
+                const firstPromo = document.querySelector('#page-home .promo-section');
+                if (firstPromo) {
+                    gsap.from(firstPromo.querySelector('.promo-title'), {opacity:0, duration:1, delay:0.2, y:30, ease:'power2.out'});
+                    gsap.from(firstPromo.querySelector('.promo-subtitle'), {opacity:0, duration:1, delay:0.4, y:30, ease:'power2.out'});
+                    gsap.from(firstPromo.querySelectorAll('.promo-links a'), {opacity:0, duration:0.8, delay:0.6, y:20, ease:'power2.out', stagger:0.2});
+                    gsap.from(firstPromo.querySelector('.promo-image'), {opacity:0, duration:1.2, delay:0.5, scale:0.98, ease:'power3.out'});
+                }
+                document.querySelectorAll('#page-home .promo-grid .promo-section').forEach((card) => {
+                    const cardTl = gsap.timeline({paused: true}).from(card, {opacity:0, y:50, duration:0.6, ease:'power2.out'});
+                    const scene = new ScrollMagic.Scene({ triggerElement: card, triggerHook: 0.9, reverse: false })
+                        .on("enter", () => cardTl.play()).addTo(controller);
+                    pageScrollMagic.scenes.push(scene);
+                });
+            }
+
+            function initProductPageAnimations(pageId, controller) {
+                const pageSelector = `#${pageId}`;
+                gsap.from(`${pageSelector} .home-title`, {opacity: 0, duration: 1.5, delay: .5, y: 50});
+                gsap.from(`${pageSelector} .home-description`, {opacity: 0, duration: 1.5, delay: .8, y: 50});
+                gsap.from(`${pageSelector} .buy-section`, {opacity: 0, duration: 1.5, delay: 1.0, y: 50});
+                gsap.from(`${pageSelector} .home-img img`, {opacity: 0, duration: 2, delay: 1.2, y: 40, stagger: 0.2 });
+                gsap.from(`${pageSelector} .home-scroll`, {opacity: 0, duration: 1.5, delay: 2.3, y: 30});
+
+                const detailsSection = document.querySelector(`${pageSelector} .l-section`);
+                const detailsImg = document.querySelector(`${pageSelector} .details-img`);
+                const detailsBoxes = document.querySelectorAll(`${pageSelector} .details-box`);
+
+                if (detailsSection && detailsImg && detailsBoxes.length > 0) {
+                    const detailsTl = gsap.timeline({paused: true});
+                    detailsTl
+                        .from(detailsImg, {opacity: 0, y: 25, duration: 1, ease:'expo.out'})
+                        .from(detailsBoxes, {opacity: 0, y: 25, duration: 1, ease:'expo.out', stagger: .4}, "-=0.8"); 
+
+                    const scene = new ScrollMagic.Scene({
+                             triggerElement: detailsSection,
+                             triggerHook: 0.6, 
+                             reverse: false
+                         })
+                         .on("enter", () => {
+                             detailsTl.play();
+                         })
+                         .addTo(controller);
+                    pageScrollMagic.scenes.push(scene);
+                } else {
+                     console.warn(`Details elements for ScrollMagic not found on page: ${pageId}`);
+                }
+
+                const airplugsAnimConfigs = [
+                    { selector: '#page-airplugs .airpod1', name: 'page-airplugs-airpod1 3s infinite ease-in-out' },
+                    { selector: '#page-airplugs .airpod2', name: 'page-airplugs-airpod2 3s infinite ease-in-out 0.2s' },
+                    { selector: '#page-airplugs .airpods', name: 'page-airplugs-airpods 3s infinite ease-in-out' }
+                ];
+                airplugsAnimConfigs.forEach(config => {
+                    const element = document.querySelector(config.selector);
+                    if (element) {
+                        element.style.animation = (pageId === 'page-airplugs') ? config.name : 'none';
+                    }
+                });
+            }
+            
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                const answer = item.querySelector('.faq-answer');
+                question.addEventListener('click', () => {
+                    const isActive = item.classList.contains('active');
+                    if (isActive) {
+                        item.classList.remove('active');
+                        answer.style.maxHeight = null;
+                        answer.style.paddingBottom = null; 
+                    } else {
+                        item.classList.add('active');
+                        answer.style.maxHeight = answer.scrollHeight + "px";
+                        answer.style.paddingBottom = "1.5rem";
+                    }
+                });
+            });
+
+            loadCart();
+            let initialPage = 'page-home';
+            if (window.location.hash && window.location.hash !== '#') {
+                const potentialPageId = 'page-' + window.location.hash.substring(1);
+                if (document.getElementById(potentialPageId)) { initialPage = potentialPageId; }
+            }
+            setTimeout(() => { showPage(initialPage); }, 100);
+
+        });
+    </script>
+
+</body>
+</html>
